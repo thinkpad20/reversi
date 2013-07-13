@@ -40,12 +40,12 @@ public class Connection implements Runnable {
          in = new Scanner(sock.getInputStream());
          out = new PrintWriter(sock.getOutputStream(), true);
       } catch (Exception e) {
-         System.out.println("Exception in player run1: " + e.getMessage());
+         System.out.println("" + e);
       }
    }
    
    public void run() {
-      send("Welcome to reversi! Type 'help' for a list of commands.");
+      send("Welcome to Reversi! Type 'help' for a list of commands.");
       while (true) {
          try {
             String input = in.nextLine(); // get line from other side
@@ -55,8 +55,6 @@ public class Connection implements Runnable {
             System.out.println("Response: " + response);
             send(response);
          } catch (Exception e) {
-            System.out.println("Exception player run2: " + e.toString());
-            e.printStackTrace();
             System.out.println("Client disconnected");
             break;
          }
