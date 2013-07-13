@@ -283,7 +283,8 @@ public class Connection implements Runnable {
       if (msg != null && msg.length() > 0) {
          System.out.println("Sending to " + player.getNick() + ": '" + msg + "'");
          out.println(msg + "\r");
-         out.println("endmsg");
+         if (player.getMode() == Player.Mode.JAVA)
+            out.println("endmsg");
       }
    }
 }
