@@ -105,7 +105,18 @@ public class Server {
    }
 
    public static void main(String[] args) throws Exception {
-      Server serv = new Server(8189);
+      int port = 8189;
+      for (int i=0; i<args.length; ++i) {
+         if (args[i].equals("-p") && i < args.length - 1) {
+            try {
+               port = Integer.parseInt(args[++i]);
+            } catch (Exception e) {
+               System.out.println("Please enter a valid port, or none");
+               System.exit(0);
+            }
+         }
+      }
+      Server serv = new Server(port);
       serv.start();
    }
 }

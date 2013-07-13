@@ -37,10 +37,25 @@ public class Client {
 
    public static void main(String[] args) {
       try {
-         Client client = new Client(InetAddress.getLocalHost(), 8189);
+         int port = 8189;
+         String hostname = "localhost";
+         for (int i=0; i<args.length; ++i) {
+            if (args[i].equals("-p") && i < args.length - 1) {
+               try {
+                  port = Integer.parseInt(args[++i]);
+               } catch (Exception e) {
+                  System.out.println("Please enter a valid port, or none");
+                  System.exit(0);
+               }
+            }
+            if (args[i].equals("-s") && i < args.length - 1) {
+               hostname = args[++i];
+            }
+         }
+         Client client = new Client(InetAddress.getByName(hostname), port);
          client.start();
       } catch (Exception e) {
-         System.out.println("oops");
+         System.out.println("" + e);
       }
    }
 }
