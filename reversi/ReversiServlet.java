@@ -47,6 +47,15 @@ public class ReversiServlet extends HttpServlet {
       // now create the response
       PrintWriter out = res.getWriter();
 
+      // if (move == null) {
+      //    out.println("<hey>hey, move is null... wtf mate</hey>");
+      //    out.close();
+      //    return;
+      // }
+
+      // PrintWriter out = res.getWriter();
+      out.print(tables.get(0).toString());
+
       // at this pont we want to return an XML document
       // that represents the move "response" to one or both
       // clients
@@ -65,10 +74,10 @@ public class ReversiServlet extends HttpServlet {
 
       // test xml just to show that we can do it. 
       // no significance to this move definition. just mechanics.
-      out.println("<move> <location> " + move.getLocation() + 
-             "</location> </move>");
-      out.flush();
-      out.close();
+      // out.println("<move> <location> " + move.getLocation() + 
+      //        "</location> </move>");
+      // out.flush();
+      // out.close();
    }
 
    public void doGet(HttpServletRequest req,

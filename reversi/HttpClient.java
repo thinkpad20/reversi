@@ -21,14 +21,23 @@ public class HttpClient {
 
    private static int id = 200;
    private static String color = "white";
+   private static String name;
 
    public static void main(String[] args) throws Exception{
       Scanner keyInput = new Scanner(System.in);
-      boolean gameOver = false;
-      while (!gameOver){
+      while (true){
          System.out.print(">>");
+         String input = keyInput.nextLine();
+         // switch (input) {
+         //    case "exit": System.exit(0);
+         //    case "move"
+         // }
+         if (input.equalsIgnoreCase("exit")) {
+            System.exit(0);
+         }
+
          int move    = Integer.parseInt(keyInput.next());
-         String xmlMove = marshalMoveToXML(move);
+         String xmlMove = marshallMoveToXML(move);
          //send xml to servlet
          System.out.println("sending input XML to server");
          String reply = postToServlet(xmlMove);
@@ -36,6 +45,8 @@ public class HttpClient {
          //Get Response
       }
    }
+
+   private static void setName(String n) { name = n; } 
 
    /*
    take a move int and create corresponding XML representation to 
@@ -45,9 +56,10 @@ public class HttpClient {
    <color>white</color>
    </move>
    */
-   private static String marshalMoveToXML(int loc) throws Exception{
+   private static String marshallMoveToXML(int loc) throws Exception {
    //obviously this first part should be done once per game, not for each move
       DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+      // factory.setIgnoringElementContentWhitespace(false);
       DocumentBuilder builder = factory.newDocumentBuilder();
       Document document = builder.newDocument();
       Element root = document.createElement("move");
@@ -78,7 +90,7 @@ public class HttpClient {
       return sw.toString();
    }
 
-   private static String postToServlet(String xmlMove) throws Exception{
+   private static String postToServlet(String xmlMove) throws Exception {
       URL url = new URL("http://localhost:8080/reversi");
       HttpURLConnection conn = (HttpURLConnection) url.openConnection();
       conn.setRequestMethod("POST");
@@ -87,18 +99,20 @@ public class HttpClient {
       conn.setRequestProperty("Content-Language", "en-US");  
       conn.setDoInput(true);
       conn.setDoOutput(true);
+      System.out.printf("Here's what we're sending:\n%s\n", xmlMove);
       PrintWriter pw = new PrintWriter(conn.getOutputStream());
       pw.write(xmlMove);
       pw.close();
 
-      Scanner in = new Scanner(conn.getInputStream());
+      BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
       StringBuffer retVal = new StringBuffer();
-      while (in.hasNext())
-         retVal.append(in.next());
+      String line;
+      while ((line = in.readLine()) != null) {
+         retVal.append(line + "\n");
+      }
 
       conn.disconnect();
 
       return (retVal.toString());
-
    }
 }
