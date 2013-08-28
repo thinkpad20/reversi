@@ -77,7 +77,7 @@ public class ReversiServlet extends HttpServlet {
       // put to string
       String inputAsString = input.toString();
       // process and get response
-      String response = processInput(inputAsString, "get");
+      String response = processInput(inputAsString);
       // write response to output
       PrintWriter out = res.getWriter();
       out.print(response);
@@ -110,6 +110,9 @@ public class ReversiServlet extends HttpServlet {
       try {
          // get the document tree (will also test validation)
          Document document = getDOM(xmlString);
+         if (document == null) {
+            return makeErrorResponse("Malformed XML", "unknown");
+         }
          // get root element
          Element root = document.getDocumentElement();
          // get the value of the type attribute
@@ -120,39 +123,138 @@ public class ReversiServlet extends HttpServlet {
              (Element) root.getElementsByTagName("uuid").item(0);
          String nick = nickElt.getTextContent();
          if (nick == null) {
-            return makeErrorResponse("You must provide a username.");
+            return makeErrorResponse("You must provide a username.", type);
          }
          if (type.equals("register")) {
             /* will check if username exists and if not, give a uuid back */
-            return makeRegistrationResponse(nick);
+            Player newPlayer = register(nick);
+            if (newPlayer == null) {
+               return makeErrorResponse("Username '" + nick + "' is already taken.", type);
+            }
+            return makeUserInfoResponse(newPlayer, type);
          }
          else if (type.equals("join")) {
             if (uuidElt == null) {
-               return makeErrorResponse("No uuid provided.");
+               return makeErrorResponse("No uuid provided.", type);
             } else {
                String uuid = uuidElt.getTextContent();
                Player p = players.get(nick);
                if (!uuid.equals(p.getUuid())) {
-                  return makeErrorResponse("Invalid uuid given., '" + nick +
-                                           "' has uuid '" + p.getUuid() + "'");
+                  return makeErrorResponse("Invalid uuid given.", type);
                }
                // look at all current tables and see if any have seats open,
-               // if not then add player to that table. If all full, make
+               // if so then add player to that table. If all full, make
                // a new table
                for (Table t : tables) {
                   if (!t.isReady()) {
                      t.addPlayer(p);
-                     return makeJoinResponse(t);
+                     return makeTableInfoResponse(t, type);
                   }
                }
                Table t = new Table(p);
                tables.add(t);
-               return makeJoinResponse(t);
+               return makeTableInfoResponse(t, type);
+            }
+         }
+         else if (type.equals("update")) {
+            if (uuidElt == null) {
+               return makeErrorResponse("No uuid provided.", type);
+            } else {
+               String uuid = uuidElt.getTextContent();
+               Player p = players.get(nick);
+               if (!uuid.equals(p.getUuid())) {
+                  return makeErrorResponse("Invalid uuid given.", type);
+               }
+               StringBuffer res = new StringBuffer();
+               res.append("<?xml version=\"1.0\"?>" +
+                          "<response type=\"confirm\" request=\"update\">");
+               // first send their registration info
+               res.append(p.getInfoXML());
+               // find the table this player is at, and send its info back.
+               if (p.getTable() != null) {
+                  res.append(p.getTable().getInfoXML());
+               }
+               res.append("</response>");
+               return res.toString();
+            }
+         }
+         else if (type.equals("move")) {
+            if (uuidElt == null) {
+               return makeErrorResponse("No uuid provided.", type);
+            } else {
+               String uuid = uuidElt.getTextContent();
+               Player p = players.get(nick);
+               Table t = p.getTable();
+               if (!uuid.equals(p.getUuid())) {
+                  return makeErrorResponse("Invalid uuid given.", type);
+               }
+               // make sure the player is at a table
+               if (t == null) {
+                  return makeErrorResponse("You aren't at any table", type);
+               }
+               // make sure it's that player's turn
+               if (t.currentPlayer() != p) {
+                  return makeErrorResponse("It's not your turn", type);
+               }
+               try {
+                  // get the row and column
+                  int row = Integer.parseInt(
+                     ((Element) root.getElementsByTagName("row").item(0)).getTextContent()
+                  );
+                  int col = Integer.parseInt(
+                     ((Element) root.getElementsByTagName("col").item(0)).getTextContent()
+                  );
+                  // try to make the move; if successful send the new table back,
+                  // else error
+                  if (t.makeMove(p, row, col)) {
+                     return makeTableInfoResponse(t, type);
+                  } else {
+                     return makeErrorResponse("Invalid move", type);
+                  }
+               } catch (Exception e) {
+                  StringWriter sw = new StringWriter();
+                  PrintWriter pw = new PrintWriter(sw);
+                  e.printStackTrace(pw);
+                  return makeErrorResponse(sw.toString() + "bloozya", type);
+               }
+            }
+         }
+         else if (type.equals("pass")) {
+            if (uuidElt == null) {
+               return makeErrorResponse("No uuid provided.", type);
+            } else {
+               String uuid = uuidElt.getTextContent();
+               Player p = players.get(nick);
+               Table t = p.getTable();
+               if (!uuid.equals(p.getUuid())) {
+                  return makeErrorResponse("Invalid uuid given.", type);
+               }
+               // make sure the player is at a table
+               if (t == null) {
+                  return makeErrorResponse("You aren't at any table", type);
+               }
+               // make sure it's that player's turn
+               if (t.currentPlayer() != p) {
+                  return makeErrorResponse("It's not your turn", type);
+               }
+               try {
+                  // try to pass; if successful send the new table back,
+                  // else error
+                  if (t.passTurn(p)) {
+                     return makeTableInfoResponse(t, type);
+                  } else {
+                     return makeErrorResponse("Invalid move", type);
+                  }
+               } catch (Exception e) {
+                  StringWriter sw = new StringWriter();
+                  PrintWriter pw = new PrintWriter(sw);
+                  e.printStackTrace(pw);
+                  return makeErrorResponse(sw.toString() + "bloozya", type);
+               }
             }
          }
          else {
-            return makeErrorResponse("As-yet unknown request type '" 
-                                      + type + "'");
+            return makeErrorResponse("As-yet unknown request type", type);
          }
       }
       catch (Exception e) {
@@ -160,26 +262,27 @@ public class ReversiServlet extends HttpServlet {
          PrintWriter pw = new PrintWriter(sw);
          e.printStackTrace(pw);
          return makeErrorResponse(sw.toString() + ". Original message: <!-- " + 
-                                    xmlString + " -->");
+                                    xmlString + " -->", "unknown");
       }
    }
 
-   private String makeJoinResponse(Table t) {
+   private String makeTableInfoResponse(Table t, String request) {
       return "<?xml version=\"1.0\"?>" +
-             "<response type=\"confirm\" request=\"join\">" +
+             "<response type=\"confirm\" request=\"" + request + "\">" +
              t.getInfoXML() + "</response>";
    }
 
-   private String makeErrorResponse(String message) {
+   private String makeErrorResponse(String message, String request) {
       return 
          "<?xml version=\"1.0\"?>" +
-         "<response type=\"error\">" +
+         "<response type=\"error\" request=\"" + request + "\">" +
          "<message>" + message + "</message>\r\n" +
          "</response>\r\n";
    }
 
    private Player register(String nick) {
-      if (players.containsKey(nick)) {
+      // don't allow duplicate nicks, and "none" is reserved
+      if (players.containsKey(nick) || nick.equalsIgnoreCase("none")) {
          return null;
       }
       String uuid = UUID.randomUUID().toString();
@@ -189,17 +292,11 @@ public class ReversiServlet extends HttpServlet {
       return p;
    }
 
-   private String makeRegistrationResponse(String nick) {
-      Player newPlayer = register(nick);
-      if (newPlayer == null) {
-         return makeErrorResponse("Username '" + nick + "' is already taken.");
-      }
+   private String makeUserInfoResponse(Player p, String request) {
       return
          "<?xml version=\"1.0\"?>" +
-         "<response type=\"confirm\" request=\"register\">" +
-         "<nick>" + newPlayer.getNick() + "</nick>" +
-         "<uuid>" + newPlayer.getUuid() + "</uuid>" + 
-         "</response>";
+         "<response type=\"confirm\" request=\"" + request + "\">"
+         + p.getInfoXML() + "</response>";
    }
 
    private void validateXML(Document document) throws Exception {

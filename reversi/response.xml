@@ -26,6 +26,9 @@
     <xs:element name="blackPlayer" type="xs:string" />
     <xs:element name="whitePlayer" type="xs:string" />
     <xs:element name="board" type="board" minOccurs="0" />
+    <xs:element name="blackScore" type="xs:string" minOccurs="0" />
+    <xs:element name="whiteScore" type="xs:string" minOccurs="0" />
+    <xs:element name="turn" type="xs:string" minOccurs="0" />
   </xs:sequence>
 </xs:complexType>
 
@@ -34,8 +37,10 @@
   <xs:sequence>
     <xs:element name="row" type="row" minOccurs="8" maxOccurs="8" />
   </xs:sequence>
+  <xs:attribute name="dim">
 </xs:complexType>
 
+<!-- each row is a string which tells us the piece at each spot -->
 <xs:complexType name="row">
   <xs:simpleContent>
     <xs:extension base="xs:string">

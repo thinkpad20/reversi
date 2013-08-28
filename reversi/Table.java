@@ -8,6 +8,7 @@ public class Table {
    private static int numTables = 0;
    private int id, current;
    private int[] recentMove;
+   private boolean[] passedLastTurn;
    private Game game;
    private Player[] players;
    private Collection<Player> observers;
@@ -21,6 +22,7 @@ public class Table {
       recentPass = false;
       current = -1;
       recentMove = new int[2];
+      passedLastTurn = new boolean[2]; // true if player passed last turn 
    }
 
    public Table(Player p) {
@@ -40,15 +42,12 @@ public class Table {
             players[i] = player;
             break;
          }
-      // if (isReady()) {
-      //    for (Player p : players) p.incGamesPlayed();
-      //    updatePlayers();
-      // }
+      player.setTable(this);
       return true;
    }
 
    public String getBoardXML() {
-      StringBuffer buf = new StringBuffer("<board>");
+      StringBuffer buf = new StringBuffer("<board dim=\"8\">");
       for (int i = 0; i < 8; ++i) {
          buf.append("<row num=\"" + i + "\">");
          buf.append(new String(game.getRow(i)));
@@ -65,9 +64,14 @@ public class Table {
       buf.append("<tableid>" + getID() + "</tableid>");
       buf.append("<blackPlayer>" + getBlackNick() + "</blackPlayer>");
       buf.append("<whitePlayer>" + getWhiteNick() + "</whitePlayer>");
-      // if two players are at the table, return the board too
-      if (isReady())
+      // if two players are at the table, return the board, score and turn
+      if (isReady()) {
          buf.append(getBoardXML());
+         int[] scores = game.getScores();
+         buf.append("<blackScore>" + scores[0] + "</blackScore>");
+         buf.append("<whiteScore>" + scores[1] + "</whiteScore>");
+         buf.append("<turn>" + (current == 1 ? "white" : "black") + "</turn>");
+      }
       buf.append("</tableInfo>");
       return buf.toString();
    }
@@ -103,6 +107,7 @@ public class Table {
    public synchronized void forfeitPlayer(Player player) {
       if (!isReady()) {
          notify("Attempt to forfeit but no game is active.");
+         return;
       }
       if (player == players[0] && players[1] != null) {
          players[1].incGamesWon(game.getScores()[1]);
@@ -152,32 +157,32 @@ public class Table {
    }
 
    private void updatePlayers() {
-      for (Player player : players) {
-         if (player != null)
-            player.send(getRecentMoveString());
-            if (player.getMode() == Player.JAVA)
-               player.send(game.toString());
-            else
-               player.send(game.prettyPrint());
-            player.send(turnAnnouncement(player));
-      }
-      for (Player player : observers) {
-         if (player != null)
-            player.send(getRecentMoveString());
-            player.send(game.prettyPrint());
-            player.send(turnAnnouncement(player));
-      }
+      // for (Player player : players) {
+      //    if (player != null)
+      //       player.send(getRecentMoveString());
+      //       if (player.getMode() == Player.JAVA)
+      //          player.send(game.toString());
+      //       else
+      //          player.send(game.prettyPrint());
+      //       player.send(turnAnnouncement(player));
+      // }
+      // for (Player player : observers) {
+      //    if (player != null)
+      //       player.send(getRecentMoveString());
+      //       player.send(game.prettyPrint());
+      //       player.send(turnAnnouncement(player));
+      // }
    }
 
    private void notify(String msg) {
-      for (Player player : players) {
-         if (player != null)
-            player.send(msg);
-      }
-      for (Player player : observers) {
-         if (player != null)
-            player.send(msg);
-      }
+      // for (Player player : players) {
+      //    if (player != null)
+      //       player.send(msg);
+      // }
+      // for (Player player : observers) {
+      //    if (player != null)
+      //       player.send(msg);
+      // }
    }
 
    private void endGame() {
@@ -197,16 +202,21 @@ public class Table {
       game.reset();
    }
 
+
+
    public boolean passTurn(Player player) {
       if (currentPlayer() != player)
          return false;
-      if (recentPass)
+      if (passedLastTurn[current]) {
          endGame();
-      update();
+      } else {
+         passedLastTurn[current] = true;
+      }
+      toggleCurrent();
       return true;
    }
 
-   private Player currentPlayer() {
+   public Player currentPlayer() {
       if (current == 0 || current == 1)
          return players[current];
       return players[0];
@@ -246,19 +256,14 @@ public class Table {
       recentPass = false;
    }
 
-   // used when someone passes their turn
-   private void update() {
-      toggleCurrent();
-      recentPass = true;
-      updatePlayers();
-   }
-
    public boolean makeMove(Player player, int x, int y) {
       char toPlay = (players[0] == player) ? 'B' :
                     (players[1] == player) ? 'W' :
                     '.';
       if (toPlay != '.' && game.placePiece(toPlay, x, y)) {
          update(x, y);
+         // update passedLastTurn to indicate was not a pass
+         passedLastTurn[toPlay == 'B' ? 0 : 1] = false;
          return true;
       }
       return false;

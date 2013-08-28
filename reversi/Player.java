@@ -88,6 +88,10 @@ public class Player extends Thread {
       return table;
    }
 
+   public void setTable(Table t) {
+      this.table = t;
+   }
+
    public void observeTable(Table t) {
       currentObservations.add(t);
    }
@@ -143,4 +147,17 @@ public class Player extends Thread {
       return res.toString();
    }
 
+   public String getInfoXML() {
+      StringBuffer res = new StringBuffer("<userInfo>");
+      if (getNick() != null)
+         res.append("<nick>" + getNick() + "</nick>");
+      if (getUuid() != null)
+         res.append("<uuid>" + getUuid() + "</uuid>");
+      if (getTable() != null)
+         res.append("<table>" + getTable().getID() + "</table>");
+      res.append("<points>" + totalPoints + "</points>");
+      res.append("<ratio>" + ((double)gamesWon/gamesPlayed) + "</ratio>");
+      res.append("</userInfo>");
+      return res.toString();
+   }
 }
