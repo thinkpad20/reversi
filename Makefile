@@ -1,7 +1,6 @@
 # yes, this makefile is lame... oh well
 CLASSFILES = reversi/ReversiServlet.class reversi/Table.class reversi/Player.class\
-				 reversi/Connection.class reversi/Server.class reversi/Game.class\
-				 reversi/Move.class
+				 reversi/Connection.class reversi/Server.class reversi/Game.class
 SOURCES = reversi/ReversiServlet.java reversi/Table.java reversi/Player.java\
 				 reversi/Connection.java reversi/Server.java
 

@@ -5,6 +5,7 @@ import java.util.Collection;
 
 public class Table {
    private String name;
+   private static int numTables = 0;
    private int id, current;
    private int[] recentMove;
    private Game game;
@@ -12,14 +13,19 @@ public class Table {
    private Collection<Player> observers;
    private boolean recentPass; // true if last turn, player passed
 
-   public Table(int id) {
-      this.id = id;
+   public Table() {
+      this.id = numTables++;
       game = new Game();
       players = new Player[2]; // 0 is black, 1 is white
       observers = new LinkedList<Player>();
       recentPass = false;
       current = -1;
       recentMove = new int[2];
+   }
+
+   public Table(Player p) {
+      this();
+      addPlayer(p);
    }
 
    public int getID() {
@@ -34,11 +40,36 @@ public class Table {
             players[i] = player;
             break;
          }
-      if (isReady()) {
-         for (Player p : players) p.incGamesPlayed();
-         updatePlayers();
-      }
+      // if (isReady()) {
+      //    for (Player p : players) p.incGamesPlayed();
+      //    updatePlayers();
+      // }
       return true;
+   }
+
+   public String getBoardXML() {
+      StringBuffer buf = new StringBuffer("<board>");
+      for (int i = 0; i < 8; ++i) {
+         buf.append("<row num=\"" + i + "\">");
+         buf.append(new String(game.getRow(i)));
+         buf.append("</row>");
+      }
+      buf.append("</board>");
+      return buf.toString();
+   }
+
+   public String getInfoXML() {
+      // return tableInfo after a join; might include the board if
+      // table is ready
+      StringBuffer buf = new StringBuffer("<tableInfo>");
+      buf.append("<tableid>" + getID() + "</tableid>");
+      buf.append("<blackPlayer>" + getBlackNick() + "</blackPlayer>");
+      buf.append("<whitePlayer>" + getWhiteNick() + "</whitePlayer>");
+      // if two players are at the table, return the board too
+      if (isReady())
+         buf.append(getBoardXML());
+      buf.append("</tableInfo>");
+      return buf.toString();
    }
 
    public synchronized boolean addPlayer(Player player, int posn) {
@@ -57,6 +88,16 @@ public class Table {
             return true;
          }
       return false;
+   }
+
+   private String getBlackNick() {
+      if (players[0] == null) return "none";
+      return players[0].getNick();
+   }
+
+   private String getWhiteNick() {
+      if (players[1] == null) return "none";
+      return players[1].getNick();
    }
 
    public synchronized void forfeitPlayer(Player player) {
@@ -114,7 +155,7 @@ public class Table {
       for (Player player : players) {
          if (player != null)
             player.send(getRecentMoveString());
-            if (player.getMode() == Player.Mode.JAVA)
+            if (player.getMode() == Player.JAVA)
                player.send(game.toString());
             else
                player.send(game.prettyPrint());
@@ -241,6 +282,10 @@ class Game {
    public Game() {
       board = new char[8][8];
       reset();
+   }
+
+   public char[] getRow (int row) {
+      return board[row];
    }
 
    public boolean hasValidMove(char color) {

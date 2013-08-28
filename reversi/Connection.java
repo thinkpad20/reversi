@@ -181,10 +181,10 @@ public class Connection implements Runnable {
       String mode = words[1];
       switch (mode) {
          case "telnet":
-            player.setMode(Player.Mode.TELNET);
+            player.setMode(Player.TELNET);
             break;
          case "java":
-            player.setMode(Player.Mode.JAVA);
+            player.setMode(Player.JAVA);
             break;
          default:
             return "Unknown mode";
@@ -283,7 +283,7 @@ public class Connection implements Runnable {
       if (msg != null && msg.length() > 0) {
          System.out.println("Sending to " + player.getNick() + ": '" + msg + "'");
          out.println(msg + "\r");
-         if (player.getMode() == Player.Mode.JAVA)
+         if (player.getMode() == Player.JAVA)
             out.println("endmsg");
       }
    }

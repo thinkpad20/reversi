@@ -1,126 +1,133 @@
 <?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
+<!--                                                     -->
+<!--                                                     -->
+<!--                                                     -->
+<!--                       REQUESTS                      -->
+<!--                                                     -->
+<!--                                                     -->
+<!--                                                     -->
+
+<!-- indicates a desired move to some row/col -->
+<xs:complexType name="move">
+  <xs:sequence>
+    <xs:element name="row" type="xs:string" />
+    <xs:element name="col" type="xs:string" />
+  </xs:sequence>
+</xs:complexType>
+
+<!-- requests the latest board, optionally specifying a table -->
+<xs:complexType name="update">
+  <xs:attribute name="table" />
+</xs:complexType>
+
+<!-- requests to join some table with some color (both optional) -->
+<xs:complexType name="join">
+  <xs:sequence>
+    <xs:element name="table" type="xs:string" minOccurs="0" />
+    <xs:element name="color" type="xs:string" minOccurs="0" />
+  </xs:sequence>
+</xs:complexType>
+
+<!-- encapsulates all possible requests -->
 <xs:element name="request">
   <xs:complexType>
     <xs:sequence>
-      <!-- the username and verification string are required
-           for all operations except register. -->
-      <xs:element name="username" type="xs:string" minOccurs="0" />
+      <!-- every request needs a username -->
+      <xs:element name="username" type="xs:string" minOccurs="1" />
+      <!-- verification string confirms we are who we say we are -->
       <xs:element name="verification" type="xs:string" minOccurs="0" />
-      <xs:choice>
-        <!-- requests to register with some username -->
-        <xs:element name="register">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="username" type="xs:string" />
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
-        <!-- requests to join a table, optionally specifying which one and 
-             which color -->
-        <xs:element name="join">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="table" type="xs:string" minOccurs="0" />
-              <xs:element name="color" type="xs:string" minOccurs="0" />
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
-        <!-- asks to make a move -->
-        <xs:element name="move">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="row" type="xs:string" />
-              <xs:element name="col" type="xs:string" />
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
-        <xs:element name="pass" /> 
-        <xs:element name="leave" />
-        <!-- lists all current tables -->
+      <!-- we'll have one of these, if not registering -->
+      <xs:choice minOccurs="0">
+        <xs:element name="join" type="join" />
+        <xs:element name="move" type="move" />
+        <!-- requests list of current tables and players -->
         <xs:element name="list" />
-        <!-- asks for latest board, optionally some specific table -->
-        <xs:element name="update">
-          <xs:complexType>
-            <xs:attribute name="table" />
-          </xs:complexType>
-        </xs:element>
+        <!-- requests to leave table -->
+        <xs:element name="leave" />
+        <!-- requests to pass turn -->
+        <xs:element name="pass" />
       </xs:choice>
     </xs:sequence>
+    <xs:attribute name="type" use="required" />
   </xs:complexType>
 </xs:element>
+
+<!--                                               -->
+<!--                                               -->
+<!--                                               -->
+<!--                    RESPONSES                  -->
+<!--                                               -->
+<!--                                               -->
+<!--                                               -->
+
+<xs:element name="message" type="xs:string" />
+
+<!-- when registering a user -->
+<xs:complexType name="userInfo">
+  <xs:sequence>
+    <xs:element name="username" type="xs:string" />
+    <xs:element name="verification" type="xs:string" />
+  </xs:sequence>
+</xs:complexType>
+
+<!-- in response to a join, we confirm with the table info -->
+<xs:complexType name="tableInfo">
+  <xs:sequence>
+    <xs:element name="table" type="xs:string" />
+    <xs:element name="color" type="xs:string" />
+    <xs:element name="opponent" type="xs:string" minOccurs="0" />
+  </xs:sequence>
+</xs:complexType>
+
+<!-- in response to a move, pass or update we confirm with the new board -->
+<xs:complexType name="board">
+  <xs:sequence>
+    <xs:element name="row" type="row" minOccurs="8" maxOccurs="8" />
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="row">
+  <xs:simpleContent>
+    <xs:extension base="xs:string">
+      <xs:attribute name="num" type="xs:string" />
+    </xs:extension>
+  </xs:simpleContent>
+</xs:complexType>
+
+<!-- used when we're reporting the current state -->
+<xs:complexType name="latest">
+  <xs:sequence>
+    <xs:element name="username" type="xs:string" minOccurs="0" />
+    <xs:element name="color" type="xs:string" minOccurs="0" />
+    <xs:element name="opponent" type="xs:string" minOccurs="0" />
+    <xs:element name="table" type="xs:string" minOccurs="0" />
+    <!-- if there's a board to send, send it -->
+    <xs:element name="board" type="board" minOccurs="0" />
+  </xs:sequence>
+</xs:complexType>
+
+<!-- used when an error has occurred -->
+<xs:complexType name="error">
+  <xs:sequence>
+    <xs:element name="message" type="xs:string" />
+  </xs:sequence>
+</xs:complexType>
 
 <xs:element name="response">
   <xs:complexType>
     <xs:sequence>
-      <!-- always include what request we're responding to -->
-      <xs:element name="request" type="xs:string" />
       <xs:choice>
-        <!-- used when we're confirming some state-changing action -->
-        <xs:element name="confirm">
-          <xs:complexType>
-            <xs:choice>
-              <xs:element name="userinfo">
-                <xs:complexType>
-                  <xs:sequence>
-                    <xs:element name="username" type="xs:string" />
-                    <xs:element name="verification" type="xs:string" />
-                  </xs:sequence>
-                </xs:complexType>
-              </xs:element>
-              <!-- in response to a move or pass, we confirm with the new board -->
-              <xs:element name="board" minOccurs="0">
-                <xs:complexType>
-                  <xs:element name="row" type="xs:string" minOccurs="8" maxOccurs="8">
-                    <xs:complexType>
-                      <xs:attribute name="num" />
-                    </xs:complexType>
-                  </xs:element>
-                </xs:complexType>
-              </xs:element>
-              <!-- in response to a join, we confirm with the table info -->
-              <xs:element name="tableInfo">
-                <xs:complexType>
-                  <xs:element name="table" type="xs:string" />
-                  <xs:element name="color" type="xs:string" />
-                </xs:complexType>
-              </xs:element>
-            </xs:choice>  
-          </xs:complexType>
-        </xs:element>
-        <!-- used when we're reporting the current state -->
-        <xs:element name="update">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="username" type="xs:string" minOccurs="0" />
-              <xs:element name="color" type="xs:string" minOccurs="0" />
-              <xs:element name="opponent" type="xs:string" minOccurs="0" />
-              <xs:element name="table" type="xs:string" minOccurs="0" />
-              <!-- if there's a board to send, here's how we send it -->
-              <xs:element name="board" minOccurs="0">
-                <xs:complexType>
-                  <!-- a single row has a "num" attribute; 8 rows -->
-                  <xs:element name="row" type="xs:string" minOccurs="8" maxOccurs="8">
-                    <xs:complexType>
-                      <xs:attribute name="num" />
-                    </xs:complexType>
-                  </xs:element>
-                </xs:complexType>
-              </xs:element>
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
-        <!-- used when an error has occurred -->
-        <xs:element name="error">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="message" type="xs:string" />
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
+        <xs:element name="board" type="board" />
+        <xs:element name="update" type="latest" />
+        <xs:element name="error" type="error" />
+        <xs:element name="tableInfo" type="tableInfo" />
+        <xs:element name="userInfo" type="userInfo" />
       </xs:choice>
     </xs:sequence>
+    <xs:attribute name="type" use="required" />
+    <xs:attribute name="request" use="required" />
   </xs:complexType>
 </xs:element>
 

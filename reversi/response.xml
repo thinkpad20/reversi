@@ -1,59 +1,6 @@
 <?xml version="1.0"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
-<!--                                                     -->
-<!--                                                     -->
-<!--                                                     -->
-<!--                       REQUESTS                      -->
-<!--                                                     -->
-<!--                                                     -->
-<!--                                                     -->
-
-<!-- indicates a desired move to some row/col -->
-<xs:complexType name="move">
-  <xs:sequence>
-    <xs:element name="row" type="xs:string" />
-    <xs:element name="col" type="xs:string" />
-  </xs:sequence>
-</xs:complexType>
-
-<!-- requests the latest board, optionally specifying a table -->
-<xs:complexType name="update">
-  <xs:attribute name="table" />
-</xs:complexType>
-
-<!-- requests to join some table with some color (both optional) -->
-<xs:complexType name="join">
-  <xs:sequence>
-    <xs:element name="table" type="xs:string" minOccurs="0" />
-    <xs:element name="color" type="xs:string" minOccurs="0" />
-  </xs:sequence>
-</xs:complexType>
-
-<!-- encapsulates all possible requests -->
-<xs:element name="request">
-  <xs:complexType>
-    <xs:sequence>
-      <!-- every request needs a username -->
-      <xs:element name="username" type="xs:string" minOccurs="1" />
-      <!-- verification string confirms we are who we say we are -->
-      <xs:element name="verification" type="xs:string" minOccurs="0" />
-      <!-- we'll have one of these, if not registering -->
-      <xs:choice minOccurs="0">
-        <xs:element name="join" type="join" />
-        <xs:element name="move" type="move" />
-        <!-- requests list of current tables and players -->
-        <xs:element name="list" />
-        <!-- requests to leave table -->
-        <xs:element name="leave" />
-        <!-- requests to pass turn -->
-        <xs:element name="pass" />
-      </xs:choice>
-    </xs:sequence>
-    <xs:attribute name="type" use="required" />
-  </xs:complexType>
-</xs:element>
-
 <!--                                               -->
 <!--                                               -->
 <!--                                               -->
@@ -75,9 +22,10 @@
 <!-- in response to a join, we confirm with the table info -->
 <xs:complexType name="tableInfo">
   <xs:sequence>
-    <xs:element name="table" type="xs:string" />
-    <xs:element name="color" type="xs:string" />
-    <xs:element name="opponent" type="xs:string" minOccurs="0" />
+    <xs:element name="tableID" type="xs:string" />
+    <xs:element name="blackPlayer" type="xs:string" />
+    <xs:element name="whitePlayer" type="xs:string" />
+    <xs:element name="board" type="board" minOccurs="0" />
   </xs:sequence>
 </xs:complexType>
 
@@ -127,7 +75,7 @@
       </xs:choice>
     </xs:sequence>
     <xs:attribute name="type" use="required" />
-    <xs:attribute name="request" use="required" />
+    <xs:attribute name="request" /> <!-- not required for error -->
   </xs:complexType>
 </xs:element>
 

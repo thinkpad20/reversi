@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<!--                                                     -->
+<!--                                                     -->
+<!--                                                     -->
+<!--                       REQUESTS                      -->
+<!--                                                     -->
+<!--                                                     -->
+<!--                                                     -->
+
+<!-- indicates a desired move to some row/col -->
+<xs:complexType name="position">
+  <xs:attribute name="row" type="xs:string" use="required" />
+  <xs:attribute name="col" type="xs:string" use="required" />
+</xs:complexType>
+
+<!-- requests the latest board, optionally specifying a table -->
+<xs:complexType name="update">
+  <xs:attribute name="table" />
+</xs:complexType>
+
+<!-- requests to join some table with some color (both optional) -->
+<xs:complexType name="join">
+  <xs:sequence>
+    <xs:element name="table" type="xs:string" minOccurs="0" />
+    <xs:element name="color" type="xs:string" minOccurs="0" />
+  </xs:sequence>
+</xs:complexType>
+
+<!-- encapsulates all possible requests -->
+<xs:element name="request">
+  <xs:complexType>
+    <xs:sequence>
+      <!-- every request needs a username -->
+      <xs:element name="username" type="xs:string" minOccurs="1" />
+      <!-- verification string confirms we are who we say we are -->
+      <xs:element name="verification" type="xs:string" minOccurs="0" />
+      <!-- we'll have one of these, if not registering -->
+      <xs:choice minOccurs="0">
+        <xs:element name="join" type="join" />
+        <xs:element name="position" type="position" />
+        <!-- requests list of current tables and players -->
+        <xs:element name="list" />
+        <!-- requests to leave table -->
+        <xs:element name="leave" />
+        <!-- requests to pass turn -->
+        <xs:element name="pass" />
+        <xs:element name="update" type="update" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="type" use="required" />
+  </xs:complexType>
+</xs:element>
+
+</xs:schema>

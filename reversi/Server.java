@@ -13,13 +13,11 @@ public class Server {
    Collection<Game> games;
    Collection<Connection> cons;
    Collection<Table> tables;
-   int tableCount;
    public Server(int port) { 
       games = new LinkedList<Game>();
       cons = new LinkedList<Connection>();
       tables = new LinkedList<Table>();
       this.port = port;
-      tableCount = 0;
    }
 
    public void start() throws Exception {
@@ -44,7 +42,7 @@ public class Server {
    }
 
    public Table addTable() {
-      Table t = new Table(tableCount++);
+      Table t = new Table();
       tables.add(t);
       return t;
    }

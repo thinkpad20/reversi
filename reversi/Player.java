@@ -7,17 +7,31 @@ public class Player extends Thread {
    private int gamesPlayed, gamesWon, totalPoints;
    private Table table;
    private Collection<Table> currentObservations;
-   private String nick;
+   private String nick, uuid;
    private Connection con;
-   public static enum Mode { JAVA, TELNET };
-   private Mode mode;
+   public static final int JAVA = 0, TELNET = 1;
+   private int mode;
 
    public Player() {
       gamesWon = gamesPlayed = 0;
       table = null;
       currentObservations = new LinkedList<Table>();
       System.out.println("Created new player");
-      mode = Mode.JAVA;
+      mode = JAVA;
+   }
+
+   public Player(String nick, String uuid) {
+      this();
+      setNick(nick);
+      setUuid(uuid);
+   }
+
+   private void setUuid(String uuid) {
+      this.uuid = uuid;
+   }
+
+   public String getUuid() {
+      return uuid;
    }
 
    public int[] getStats() {
@@ -26,6 +40,7 @@ public class Player extends Thread {
    }
 
    public void setCon(Connection con) {
+      // not relevant in HTTP, only for sockets
       this.con = con;
    }
 
@@ -41,11 +56,11 @@ public class Player extends Thread {
       return nick != null;
    }
 
-   public void setMode(Mode mode) {
+   public void setMode(int mode) {
       this.mode = mode;
    }
 
-   public Mode getMode() {
+   public int getMode() {
       return mode;
    }
 
