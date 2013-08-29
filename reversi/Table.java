@@ -62,6 +62,7 @@ public class Table {
       // table is ready
       StringBuffer buf = new StringBuffer("<tableInfo>");
       buf.append("<tableid>" + getID() + "</tableid>");
+      buf.append("<ready>" + (isReady() ? "true" : "false") + "</ready>");
       buf.append("<blackPlayer>" + getBlackNick() + "</blackPlayer>");
       buf.append("<whitePlayer>" + getWhiteNick() + "</whitePlayer>");
       // if two players are at the table, return the board, score and turn

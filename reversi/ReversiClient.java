@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import javax.xml.transform.dom.DOMSource;
 import java.util.UUID;
 import java.util.HashMap;
+import java.util.Arrays;
 
 public class ReversiClient {
     private String nick, uuid, color, tableid;
@@ -166,9 +167,8 @@ public class ReversiClient {
             uuid = findSubelem(uiElem, "uuid").getTextContent();
             return true;
         } else if (resp.getAttribute("type").equals("error")) {
-            System.out.println("Error: ");
             Element message = findSubelem(resp, "message");
-            System.out.println(message.getTextContent());
+            printMessage("Error", message.getTextContent());
         }
         return false;
     }
@@ -186,19 +186,24 @@ public class ReversiClient {
     }
 
     private void join() {
+        // joins any open table with any color
         join("", "");
     }
 
     private void move(int row, int col) {
-        System.out.printf("%s moves to %d, %d\n", nick, row, col);
+        // System.out.printf("%s moves to %d, %d\n", nick, row, col);
         String posn = "<position><row>" + row +
                       "</row><col>" + col + "</col></position>";
         update(makeRequest(makeXML("move", posn)));
     }
 
     private void pass() {
-        System.out.printf("%s passes turn\n", this.nick);
+        // System.out.printf("%s passes turn\n", this.nick);
         update(makeRequest(makeXML("pass")));
+    }
+
+    private void leave() {
+        update(makeRequest(makeXML("leave")));
     }
 
     // updates by sending an update request to server
@@ -211,17 +216,48 @@ public class ReversiClient {
         update(makeRequest(makeXML("update", tbl), "GET"));
     }
 
-    // update win/loss/points stats
+    // get win/loss/points stats
     private void stats() {
-        Element resp = makeRequest(makeXML("stats"), "GET");
+        System.out.print("Press enter for your stats, or type a "+
+                         "player's name: ");
+        String input = in.nextLine();
+        String content = "";
+        if (input.length() > 0) {
+            content = "<player>" + input + "</player>";
+        }
+        Element resp = makeRequest(makeXML("stats", content), "GET");
     }
 
     private void listPlayers() {
         Element resp = makeRequest(makeXML("listPlayers"), "GET");
+        NodeList ps = resp.getElementsByTagName("userInfo");
+        try {
+            for (int i = 0; i < ps.getLength(); ++i) {
+                Element pl = (Element) ps.item(i);
+                String nick = findSubelem(pl, "nick").getTextContent();
+                String ratio = findSubelem(pl, "ratio").getTextContent();
+                String points = findSubelem(pl, "points").getTextContent();
+                System.out.printf("Player '%s'\n\tTotal points thus far: "+
+                                   "%s\n\tWin/loss ratio: %s\n", 
+                                   nick, points, ratio);
+                Element tbl = findSubelem(pl, "tableInfo");
+                if (tbl != null)
+                    printTableInfo(tbl, true, true);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void listTables() {
         Element resp = makeRequest(makeXML("listTables"), "GET");
+        if (!resp.getAttribute("type").equals("confirm")) {
+            return;
+        }
+        NodeList tbls = resp.getElementsByTagName("tableInfo");
+        for (int i = 0; i < tbls.getLength(); ++i) {
+            printTableInfo((Element)tbls.item(i), true, true);
+        }
     }
 
     // updates based on the response to some request we sent
@@ -233,7 +269,7 @@ public class ReversiClient {
         if (resp.getAttribute("type").equals("error")) {
             System.out.println("Looks like we've got an error:");
             Element message = findSubelem(resp, "message");
-            System.out.println(message.getTextContent());
+            printMessage("Error", message.getTextContent());
             return;
         }
 
@@ -260,26 +296,7 @@ public class ReversiClient {
         else if (nick.equals(white))
             color = "white";
         // otherwise, this isn't our table that we're looking at...
-
-        // check if they've sent a board
-        Element board = findSubelem(tableInfo, "board");
-        if (board != null) {
-            printBoard(board);
-            String blackPlayer = 
-                findSubelem(tableInfo, "blackPlayer").getTextContent();
-            String whitePlayer = 
-                findSubelem(tableInfo, "whitePlayer").getTextContent();
-            int blackScore = Integer.parseInt(
-                findSubelem(tableInfo, "blackScore").getTextContent());
-            int whiteScore = Integer.parseInt(
-                findSubelem(tableInfo, "whiteScore").getTextContent());
-            // see whose turn it is
-            String turn = findSubelem(tableInfo, "turn").getTextContent();
-            System.out.printf("Black: %s, %d points\n"+
-                              "White: %s, %d points\n%s's turn\n",
-                              blackPlayer, blackScore,
-                              whitePlayer, whiteScore, turn);
-        }
+        printTableInfo(tableInfo, false, false);
 
         Element userInfo = findSubelem(resp, "userInfo");
         if (userInfo != null) {
@@ -290,6 +307,67 @@ public class ReversiClient {
                         findSubelem(userInfo, "points").getTextContent()
                     );
         }
+    }
+
+    private void printMessage(String header, String message) {
+        // this will print a message in a textbox
+        // surrounded by pipes and hypens like this, :
+        /*------------------------------------------------------------+
+        | Message:                                                    |
+        |   message goes here                                         |
+        |                                                             |
+        +------------------------------------------------------------*/
+        System.out.printf(
+          "/*------------------------------------------------------------+\n"+
+          "| %-7s:                                                    |\n", 
+          header);
+        // splits message into substrings 56 characters long
+        String[] lines = message.split("(?<=\\G.{56})");
+        for (int i = 0; i < lines.length; ++i) {
+            System.out.printf("|   %-56s  |\n", lines[i]);
+        }
+        System.out.println(
+          "+------------------------------------------------------------*/");
+    }
+
+    private void printTableInfo(Element tableInfo, 
+                                boolean skipBoard,
+                                boolean skipMessage) {
+        System.out.printf("Table %s\n", 
+            findSubelem(tableInfo, "tableid").getTextContent()
+        );
+
+        // print a message if there is one and we don't want to skip it
+        Element msg = findSubelem(tableInfo, "message");
+        if (msg != null && !skipMessage) {
+            printMessage("Message", msg.getTextContent());
+        }
+
+        // print a board if there is one and we don't want to skip it
+        Element board = findSubelem(tableInfo, "board");
+        if (board != null && !skipBoard) {
+            printBoard(board);
+        }
+
+        String blackPlayer = 
+            findSubelem(tableInfo, "blackPlayer").getTextContent();
+        String whitePlayer = 
+            findSubelem(tableInfo, "whitePlayer").getTextContent();
+
+        int blackScore = 0, whiteScore = 0;
+        String turn = "No one";
+        try {
+            blackScore = Integer.parseInt(
+                findSubelem(tableInfo, "blackScore").getTextContent());
+            whiteScore = Integer.parseInt(
+                findSubelem(tableInfo, "whiteScore").getTextContent());
+            // see whose turn it is
+            turn = findSubelem(tableInfo, "turn").getTextContent();
+        } catch (Exception e) { /* ignore, just means not defined */ }
+        System.out.printf("\tBlack: %s, %d points\n"+
+                          "\tWhite: %s, %d points\n\t%s's turn\n",
+                          blackPlayer, blackScore,
+                          whitePlayer, whiteScore, turn);
     }
 
     private void help() {
@@ -303,7 +381,7 @@ public class ReversiClient {
                            "\tobserve: see the state of a table\n" +
                            "\ttables: to see all tables on the server\n" +
                            "\tplayers: to see all players on the server"
-            );          
+        );
     }
 
     private int[] getMove() {
@@ -320,9 +398,11 @@ public class ReversiClient {
     private void joinTable() {
         System.out.print("Enter a color (press enter if no preference): ");
         String color = in.nextLine();
-        if (!color.equals("black") && !color.equals("white")) {
-            System.out.println("Error: invalid color selected. No preference");
-            color = "";
+        if (color.length() > 0)
+            if (!color.equals("black") && !color.equals("white")) {
+                System.out.println("Error: invalid color selected. "+
+                                   "Assuming no preference.");
+                color = "";
         }
         // make this a loop so that if the user wants, they can see all of
         // the tables available to them
@@ -383,6 +463,12 @@ public class ReversiClient {
             }
             else if (input.equalsIgnoreCase("players")) {
                 listPlayers();
+            }
+            else if (input.equalsIgnoreCase("leave")) {
+                leave();
+            }
+            else if (input.equalsIgnoreCase("stats")) {
+                stats();
             }
             else {
                 System.out.println("Unrecognized command '" + input + "'");
