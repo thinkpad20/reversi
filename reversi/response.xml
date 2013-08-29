@@ -12,22 +12,23 @@
 <xs:element name="message" type="xs:string" />
 
 <!-- when registering a user -->
-<xs:complexType name="userInfo">
+<xs:complexType name="regInfo">
   <xs:sequence>
-    <xs:element name="username" type="xs:string" />
-    <xs:element name="verification" type="xs:string" />
+    <xs:element name="nick" type="xs:string" />
+    <xs:element name="uuid" type="xs:string" />
   </xs:sequence>
 </xs:complexType>
 
 <!-- in response to a join, we confirm with the table info -->
 <xs:complexType name="tableInfo">
   <xs:sequence>
-    <xs:element name="tableID" type="xs:string" />
-    <xs:element name="blackPlayer" type="xs:string" />
-    <xs:element name="whitePlayer" type="xs:string" />
+    <xs:element name="tableid" type="xs:string" />
+    <xs:element name="message" type="xs:string" minOccurs="0" />
     <xs:element name="board" type="board" minOccurs="0" />
     <xs:element name="blackScore" type="xs:string" minOccurs="0" />
     <xs:element name="whiteScore" type="xs:string" minOccurs="0" />
+    <xs:element name="blackPlayer" type="xs:string" />
+    <xs:element name="whitePlayer" type="xs:string" />
     <xs:element name="turn" type="xs:string" minOccurs="0" />
   </xs:sequence>
 </xs:complexType>
@@ -37,7 +38,6 @@
   <xs:sequence>
     <xs:element name="row" type="row" minOccurs="8" maxOccurs="8" />
   </xs:sequence>
-  <xs:attribute name="dim">
 </xs:complexType>
 
 <!-- each row is a string which tells us the piece at each spot -->
@@ -49,38 +49,43 @@
   </xs:simpleContent>
 </xs:complexType>
 
-<!-- used when we're reporting the current state -->
-<xs:complexType name="latest">
+<!-- all information regarding some player on the server -->
+<xs:complexType name="userInfo">
   <xs:sequence>
-    <xs:element name="username" type="xs:string" minOccurs="0" />
-    <xs:element name="color" type="xs:string" minOccurs="0" />
-    <xs:element name="opponent" type="xs:string" minOccurs="0" />
-    <xs:element name="table" type="xs:string" minOccurs="0" />
-    <!-- if there's a board to send, send it -->
-    <xs:element name="board" type="board" minOccurs="0" />
+    <xs:element name="nick" type="xs:string" />
+    <xs:element name="totalPoints" type="xs:string" />
+    <xs:element name="winPercent" type="xs:string" />
+    <!-- optionally, we can include information about user's table -->
+    <xs:element name="tableInfo" type="tableInfo" minOccurs="0" />
   </xs:sequence>
 </xs:complexType>
 
-<!-- used when an error has occurred -->
-<xs:complexType name="error">
+<xs:complexType name="listUsers">
   <xs:sequence>
-    <xs:element name="message" type="xs:string" />
+    <xs:element name="userInfo" type="userInfo" />
+  </xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="listTables">
+  <xs:sequence>
+    <xs:element name="tableInfo" type="tableInfo" />
   </xs:sequence>
 </xs:complexType>
 
 <xs:element name="response">
   <xs:complexType>
     <xs:sequence>
+      <xs:element name="message" type="xs:string" minOccurs="0" />
       <xs:choice>
-        <xs:element name="board" type="board" />
-        <xs:element name="update" type="latest" />
-        <xs:element name="error" type="error" />
-        <xs:element name="tableInfo" type="tableInfo" />
         <xs:element name="userInfo" type="userInfo" />
+        <xs:element name="tableInfo" type="tableInfo" />
+        <xs:element name="regInfo" type="regInfo" />
+        <xs:element name="listUsers" type="listUsers" />
+        <xs:element name="listTables" type="listTables" />
       </xs:choice>
     </xs:sequence>
     <xs:attribute name="type" use="required" />
-    <xs:attribute name="request" /> <!-- not required for error -->
+    <xs:attribute name="request" use="required" />
   </xs:complexType>
 </xs:element>
 

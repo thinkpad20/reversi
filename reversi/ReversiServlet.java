@@ -29,7 +29,6 @@ public class ReversiServlet extends HttpServlet {
    HashMap<String, Player> players;
    public void init() {
       // initialize board
-      tables.add(new Table());
       players = new HashMap<String, Player>();
       // initialize schema
       SchemaFactory sf = 
@@ -131,7 +130,7 @@ public class ReversiServlet extends HttpServlet {
             if (newPlayer == null) {
                return makeErrorResponse("Username '" + nick + "' is already taken.", type);
             }
-            return makeUserInfoResponse(newPlayer, type);
+            return makeRegInfoResponse(newPlayer, type);
          }
          else if (type.equals("join")) {
             if (uuidElt == null) {
@@ -168,7 +167,7 @@ public class ReversiServlet extends HttpServlet {
                StringBuffer res = new StringBuffer();
                res.append("<?xml version=\"1.0\"?>" +
                           "<response type=\"confirm\" request=\"update\">");
-               // first send their registration info
+               // first send their user info
                res.append(p.getInfoXML());
                // find the table this player is at, and send its info back.
                if (p.getTable() != null) {
@@ -177,6 +176,30 @@ public class ReversiServlet extends HttpServlet {
                res.append("</response>");
                return res.toString();
             }
+         }
+         else if (type.equals("listPlayers")) {
+            // no need to check nick/uuid here...
+            StringBuffer res = new StringBuffer();
+            res.append("<?xml version=\"1.0\"?>" +
+                          "<response type=\"confirm\" "+
+                          "request=\"listPlayers\">");
+            for (Player p : players.values()) {
+               res.append(p.getInfoXML());
+            }
+            res.append("</response>");
+            return res.toString();
+         }
+         else if (type.equals("listTables")) {
+            // no need to check nick/uuid here...
+            StringBuffer res = new StringBuffer();
+            res.append("<?xml version=\"1.0\"?>" +
+                          "<response type=\"confirm\" "+
+                          "request=\"listTables\">");
+            for (Table t : tables) {
+               res.append(t.getInfoXML());
+            }
+            res.append("</response>");
+            return res.toString();
          }
          else if (type.equals("move")) {
             if (uuidElt == null) {
@@ -292,11 +315,12 @@ public class ReversiServlet extends HttpServlet {
       return p;
    }
 
-   private String makeUserInfoResponse(Player p, String request) {
+   private String makeRegInfoResponse(Player p, String request) {
       return
          "<?xml version=\"1.0\"?>" +
-         "<response type=\"confirm\" request=\"" + request + "\">"
-         + p.getInfoXML() + "</response>";
+         "<response type=\"confirm\" request=\"" + request + "\">" +
+         "<regInfo><nick>" + p.getNick() + "</nick>" +
+         "<uuid>" + p.getUuid() + "</uuid></regInfo></response>";
    }
 
    private void validateXML(Document document) throws Exception {

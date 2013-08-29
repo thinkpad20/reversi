@@ -151,10 +151,10 @@ public class Player extends Thread {
       StringBuffer res = new StringBuffer("<userInfo>");
       if (getNick() != null)
          res.append("<nick>" + getNick() + "</nick>");
-      if (getUuid() != null)
-         res.append("<uuid>" + getUuid() + "</uuid>");
       if (getTable() != null)
          res.append("<table>" + getTable().getID() + "</table>");
+      else
+         res.append("<table>none</table>");
       res.append("<points>" + totalPoints + "</points>");
       res.append("<ratio>" + ((double)gamesWon/gamesPlayed) + "</ratio>");
       res.append("</userInfo>");
