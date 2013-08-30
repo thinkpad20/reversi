@@ -334,8 +334,11 @@ public class ReversiClient {
         }
 
         Element tableInfo = findSubelem(resp, "tableInfo");
+        // if no table element, then we're not at a table
         if (tableInfo == null) {
-            throw new RuntimeException("tableInfo element not found");
+            color = "none";
+            tableid = null;
+            return;
         }
 
         if (tableid == null)
@@ -524,8 +527,12 @@ public class ReversiClient {
 
     public void run() {
         while (true) {
-            System.out.print("(" + nick + ") Enter command " +
-                             "(type help for list): ");
+            System.out.print("Logged in as " + nick + ".");
+            if (tableid != null)
+                System.out.print(" Table: " + tableid + "\n");
+            else
+                System.out.print(" Not currently at a table.\n");
+            System.out.print("Enter command (type help for list): ");
             String input = in.nextLine();
             if (input.equalsIgnoreCase("exit"))
                 return;

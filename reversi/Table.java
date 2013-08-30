@@ -208,8 +208,10 @@ public class Table {
       }
       recentScores = scores;
       current = -1;
-      players[0].incGamesPlayed();
-      players[1].incGamesPlayed();
+      if (players[0] != null)
+         players[0].incGamesPlayed();
+      if (players[1] != null)
+         players[1].incGamesPlayed();
       game.reset();
    }
 
