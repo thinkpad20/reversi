@@ -83,7 +83,7 @@
   <xs:complexType>
     <xs:sequence>
       <xs:element name="message" type="xs:string" minOccurs="0" />
-      <xs:choice>
+      <xs:choice minOccurs="0">
         <xs:element name="userInfo" type="userInfo" />
         <xs:element name="tableInfo" type="tableInfo" />
         <xs:element name="regInfo" type="regInfo" />

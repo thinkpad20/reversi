@@ -437,7 +437,8 @@ public class ReversiClient {
                            "\tupdate: to get the latest at your table\n"+
                            "\tobserve: see the state of a table\n" +
                            "\ttables: to see all tables on the server\n" +
-                           "\tplayers: to see all players on the server"
+                           "\tplayers: to see all players on the server\n" +
+                           "\texit: quit game"
         );
     }
 
@@ -569,7 +570,7 @@ public class ReversiClient {
                 observe();
             }
             else {
-                System.out.println("Unrecognized command '" + input + "'");
+                printMessage("System", "Unrecognized command '" + input + "'");
             }
         }
     }
