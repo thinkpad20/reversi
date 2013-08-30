@@ -207,6 +207,19 @@ public class ReversiServlet extends HttpServlet {
          res.append("</response>");
          return res.toString();
       }
+      else if (type.equals("observe")) {
+         Element tableid = 
+            (Element) root.getElementsByTagName("tableid").item(0);
+         if (tableid == null) {
+            return makeErrorResponse("No tableid specified", type);
+         }
+         try {
+            int tid = Integer.parseInt(tableid.getTextContent());
+            return makeTableInfoResponse(tables.get(tid),type);
+         } catch (Exception e) {
+            return makeErrorResponse("Invalid tableid", type);
+         }
+      }
       else if (type.equals("move")) {
          // make sure the player is at a table
          if (t == null) {

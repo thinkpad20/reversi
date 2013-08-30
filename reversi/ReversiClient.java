@@ -22,6 +22,7 @@ import java.util.Arrays;
 
 public class ReversiClient {
     private String nick, uuid, color, tableid;
+    private String recentObservation; // stores the most recent table observed
     private boolean playing;
     private int wins, losses, points;
     private double ratio;
@@ -159,10 +160,15 @@ public class ReversiClient {
             "<?xml version=\"1.0\" ?><request "+
             "type=\"register\"><nick>" + nick + "</nick></request>";
         Element resp = makeRequest(reg);
+        if (resp == null) {
+            System.out.println("Malformed response from server.");
+            return false;
+        }
         if (resp.getAttribute("type").equals("confirm")) {
             Element uiElem = findSubelem(resp, "regInfo");
+            // if we didn't get a uuid from the server, this is a problem!
             if (uiElem == null)
-                throw new RuntimeException("Didn't get a ui from the server");
+                throw new RuntimeException("Didn't get uuid from the server");
             
             uuid = findSubelem(uiElem, "uuid").getTextContent();
             return true;
@@ -226,10 +232,30 @@ public class ReversiClient {
             content = "<player>" + input + "</player>";
         }
         Element resp = makeRequest(makeXML("stats", content), "GET");
+        if (resp == null) {
+            System.out.println("Malformed response from server.");
+            return;
+        }
+        if (resp.getAttribute("type").equals("confirm")) {
+            Element userInfo = findSubelem(resp, "userInfo");
+            System.out.printf("Player %s:\n\tTotal points: %s\n" +
+                              "\tWin/loss ratio: %s\n",
+                              findSubelem(userInfo, "nick").getTextContent(),
+                              findSubelem(userInfo, "points").getTextContent(),
+                              findSubelem(userInfo, "ratio").getTextContent());
+
+        } else if (resp.getAttribute("type").equals("error")) {
+            Element message = findSubelem(resp, "message");
+            printMessage("Error", message.getTextContent());
+        }
     }
 
     private void listPlayers() {
         Element resp = makeRequest(makeXML("listPlayers"), "GET");
+        if (resp == null) {
+            System.out.println("Malformed response from server.");
+            return;
+        }
         NodeList ps = resp.getElementsByTagName("userInfo");
         try {
             for (int i = 0; i < ps.getLength(); ++i) {
@@ -315,7 +341,6 @@ public class ReversiClient {
         /*------------------------------------------------------------+
         | Message:                                                    |
         |   message goes here                                         |
-        |                                                             |
         +------------------------------------------------------------*/
         System.out.printf(
           "/*------------------------------------------------------------+\n"+
@@ -426,6 +451,46 @@ public class ReversiClient {
         }
     }
 
+    public void observe() {
+        Element resp;
+        // loop until we make a request
+        while (true) {
+            System.out.print("Enter the table you wish to observe "
+                             + "(For a list of tables, type tables): ");
+            String input = in.nextLine();
+            if (input.length() == 0 && recentObservation != null) {
+                resp = makeRequest(makeXML("observe", "<tableid>" + 
+                                    recentObservation + "</tableid>"));
+                break;
+            }
+            if (input.equals("tables")) {
+                listTables();
+            } else {
+                recentObservation = input;
+                resp = makeRequest(makeXML("observe", "<tableid>" + 
+                                    input + "</tableid>"));
+                break;   
+            }
+        }
+        if (resp == null) {
+            System.out.println("Malformed response from server.");
+            return;
+        }
+        if (resp.getAttribute("type").equals("error")) {
+            System.out.println("Looks like we've got an error:");
+            Element message = findSubelem(resp, "message");
+            printMessage("Error", message.getTextContent());
+            return;
+        }
+        Element tableInfo = findSubelem(resp, "tableInfo");
+        if (tableInfo != null) {
+            printTableInfo(tableInfo, false, false);
+        }
+        else {
+            printMessage("Error", "Server did not send any table info.");
+        }
+    }
+
     public void printBoard(Element board) {
         // build arraylist of rows
         NodeList rows = board.getElementsByTagName("row");
@@ -438,7 +503,8 @@ public class ReversiClient {
 
     public void run() {
         while (true) {
-            System.out.print("Enter command (type help for list): ");
+            System.out.print("(" + nick + ") Enter command " +
+                             "(type help for list): ");
             String input = in.nextLine();
             if (input.equalsIgnoreCase("exit"))
                 return;
@@ -446,6 +512,7 @@ public class ReversiClient {
                 joinTable();
             }
             else if (input.equalsIgnoreCase("move")) {
+                update(); // get latest board status first
                 int[] move = getMove();
                 move(move[0], move[1]);
             }
@@ -469,6 +536,9 @@ public class ReversiClient {
             }
             else if (input.equalsIgnoreCase("stats")) {
                 stats();
+            }
+            else if (input.equalsIgnoreCase("observe")) {
+                observe();
             }
             else {
                 System.out.println("Unrecognized command '" + input + "'");

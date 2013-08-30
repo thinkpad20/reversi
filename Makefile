@@ -3,7 +3,7 @@ CLASSFILES = reversi/ReversiServlet.class reversi/Table.class reversi/Player.cla
 SOURCES = reversi/ReversiServlet.java reversi/Table.java reversi/Player.java\
 				 reversi/Connection.java reversi/Server.java
 
-all: httpclient servlet restart
+all: clean httpclient servlet restart
 
 restart:
 	-catalina stop
@@ -32,7 +32,7 @@ httpclient: reversi/ReversiClient.java
 # 	javac reversi/Server.java reversi/Player.java reversi/Connection.java reversi/Table.java reversi/Client.java
 	
 clean:
-	rm reversi/*.class
+	rm -f reversi/*.class
 
 socketserver: sockets
 	@java reversi.Server -p 7890

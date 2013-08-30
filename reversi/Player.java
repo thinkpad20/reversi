@@ -128,7 +128,7 @@ public class Player extends Thread {
 
    public void incGamesPlayed() { gamesPlayed++; }
 
-   public void incGamesWon(int pts) { gamesWon++; addPoints(pts); }
+   public void incGamesWon() { gamesWon++; }
 
    public void addPoints(int pts) { totalPoints += pts; }
 

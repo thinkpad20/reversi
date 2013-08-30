@@ -4,10 +4,10 @@ import java.util.LinkedList;
 import java.util.Collection;
 
 public class Table {
-   private String name;
+   private String name, recentWinner;
    private static int numTables = 0;
    private int id, current;
-   private int[] recentMove;
+   private int[] recentMove, recentScores;
    private boolean[] passedLastTurn;
    private Game game;
    private Player[] players;
@@ -62,6 +62,7 @@ public class Table {
       // table is ready
       StringBuffer buf = new StringBuffer("<tableInfo>");
       buf.append("<tableid>" + getID() + "</tableid>");
+      buf.append("<message>" + getMessage() + "</message>");
       buf.append("<ready>" + (isReady() ? "true" : "false") + "</ready>");
       buf.append("<blackPlayer>" + getBlackNick() + "</blackPlayer>");
       buf.append("<whitePlayer>" + getWhiteNick() + "</whitePlayer>");
@@ -80,6 +81,7 @@ public class Table {
    public synchronized boolean addPlayer(Player player, int posn) {
       if (players[posn] == null) {
          players[posn] = player;
+         player.incGamesPlayed();
          return true;
       }
       return false;
@@ -105,19 +107,49 @@ public class Table {
       return players[1].getNick();
    }
 
+   private String getMessage() {
+      StringBuffer res = new StringBuffer();
+      if (!isReady()) {
+         if (recentWinner != null) {
+            res.append(recentWinner + " won the game, " +
+               recentScores[0] + " to " + recentScores[1] +".\n");
+         } else {
+            res.append("New table. ");
+         }
+         if (players[0] != null) {
+            res.append(
+               "Waiting for white player, " + getBlackNick() +
+               " is black.");
+         } else if (players[1] != null) {
+            res.append(
+               "Waiting for black player, " + getWhiteNick() +
+               " is white.");
+         } else {
+            res.append("Waiting for two players.");
+         }
+         return res.toString();
+      }
+      if (recentWinner != null) {
+         return recentWinner + " won the game, " +
+            recentScores[0] + " to " + recentScores[1] +".";
+
+      }
+      return getRecentMoveString();
+   }
+
    public synchronized void forfeitPlayer(Player player) {
       if (!isReady()) {
-         notify("Attempt to forfeit but no game is active.");
          return;
       }
       if (player == players[0] && players[1] != null) {
-         players[1].incGamesWon(game.getScores()[1]);
+         players[1].incGamesWon();
+         players[1].addPoints(game.getScores()[1]);
       } else if (player == players[1] && players[0] != null) {
-         players[0].incGamesWon(game.getScores()[0]);
+         players[0].incGamesWon();
+         players[0].addPoints(game.getScores()[1]);
       } else {
          return;
       }
-      notify("Player " + player.getNick() + " has forfeited.");
       game.reset();
    }
 
@@ -157,53 +189,29 @@ public class Table {
       current = (current == 1) ? 0 : 1;
    }
 
-   private void updatePlayers() {
-      // for (Player player : players) {
-      //    if (player != null)
-      //       player.send(getRecentMoveString());
-      //       if (player.getMode() == Player.JAVA)
-      //          player.send(game.toString());
-      //       else
-      //          player.send(game.prettyPrint());
-      //       player.send(turnAnnouncement(player));
-      // }
-      // for (Player player : observers) {
-      //    if (player != null)
-      //       player.send(getRecentMoveString());
-      //       player.send(game.prettyPrint());
-      //       player.send(turnAnnouncement(player));
-      // }
-   }
-
-   private void notify(String msg) {
-      // for (Player player : players) {
-      //    if (player != null)
-      //       player.send(msg);
-      // }
-      // for (Player player : observers) {
-      //    if (player != null)
-      //       player.send(msg);
-      // }
-   }
-
    private void endGame() {
       int[] scores = game.getScores();
       if (isReady()) {
-         if (scores[0] > scores[1])
-            players[0].incGamesWon(scores[0]);
-         else if (scores[1] > scores[0]) 
-            players[1].incGamesWon(scores[1]);
-         else {
+         if (scores[0] > scores[1]) {
+            players[0].incGamesWon();
+            players[0].addPoints(scores[0]);
+            recentWinner = players[0].getNick();
+         } else if (scores[1] > scores[0]) {
+            players[1].incGamesWon();
+            players[1].addPoints(scores[1]);
+            recentWinner = players[1].getNick();
+         } else {
             players[0].addPoints(scores[0]);
             players[1].addPoints(scores[1]);
+            recentWinner = "Neither player";
          }
       }
-      notify("Game has ended. Score was black " 
-               + scores[0] + ", white " + scores[1]);
+      recentScores = scores;
+      current = -1;
+      players[0].incGamesPlayed();
+      players[1].incGamesPlayed();
       game.reset();
    }
-
-
 
    public boolean passTurn(Player player) {
       if (currentPlayer() != player)
@@ -212,6 +220,7 @@ public class Table {
          endGame();
       } else {
          passedLastTurn[current] = true;
+         recentPass = true;
       }
       toggleCurrent();
       return true;
@@ -235,11 +244,18 @@ public class Table {
 
    private String getRecentMoveString() {
       if (currentColor().equals("None"))
-         return "New game\r\n";
+         return "New game";
       String move = "moved to " + recentMove[0] + ", " + recentMove[1];
       if (recentPass)
          move = "passed their turn";
-      return currentColor() + " (" + currentPlayer().getNick() + ") " + move + "\r\n";
+      return prevColor() + " (" + prevPlayer().getNick() + ") " + move;
+   }
+
+   // returns whose turn it ISN'T's color
+   private String prevColor() {
+      return (current == 1) ? "Black" : 
+             (current == 0) ? "White" :
+             "None";
    }
 
    private String turnAnnouncement(Player player) {
@@ -253,8 +269,8 @@ public class Table {
       toggleCurrent();
       recentMove[0] = x;
       recentMove[1] = y;
-      updatePlayers();
       recentPass = false;
+      recentWinner = null;
    }
 
    public boolean makeMove(Player player, int x, int y) {
