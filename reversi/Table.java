@@ -47,7 +47,7 @@ public class Table {
    }
 
    public String getBoardXML() {
-      StringBuffer buf = new StringBuffer("<board dim=\"8\">");
+      StringBuffer buf = new StringBuffer("<board>");
       for (int i = 0; i < 8; ++i) {
          buf.append("<row num=\"" + i + "\">");
          buf.append(new String(game.getRow(i)));
@@ -97,12 +97,12 @@ public class Table {
       return false;
    }
 
-   private String getBlackNick() {
+   public String getBlackNick() {
       if (players[0] == null) return "none";
       return players[0].getNick();
    }
 
-   private String getWhiteNick() {
+   public String getWhiteNick() {
       if (players[1] == null) return "none";
       return players[1].getNick();
    }

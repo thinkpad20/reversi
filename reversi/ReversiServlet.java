@@ -27,6 +27,7 @@ public class ReversiServlet extends HttpServlet {
    Schema requestSchema;
    Validator validator;
    HashMap<String, Player> players;
+   String validationError; // to store such an error if we get one
    public void init() {
       // initialize board
       players = new HashMap<String, Player>();
@@ -43,8 +44,6 @@ public class ReversiServlet extends HttpServlet {
          e.printStackTrace();
       }
    }
-
-   static String message;
 
    public void doPost(HttpServletRequest req,
                       HttpServletResponse res)
@@ -90,7 +89,14 @@ public class ReversiServlet extends HttpServlet {
 
       Document document =
          builder.parse(new InputSource(new StringReader(xml)));
-      // validateXML(document);
+      try {
+         validateXML(document);
+      } catch (Exception e) {
+         StringWriter sw = new StringWriter();
+         PrintWriter pw = new PrintWriter(sw);
+         e.printStackTrace(pw);
+         validationError = sw.toString();
+      }
       return document;
    }
 
@@ -99,7 +105,8 @@ public class ReversiServlet extends HttpServlet {
          // get the document tree (will also test validation)
          Document document = getDOM(xmlString);
          if (document == null) {
-            return makeErrorResponse("Malformed XML", "unknown");
+            return makeErrorResponse("Malformed XML: <!--" +
+                           validationError + " -->", "unknown");
          }
          // get root element
          Element root = document.getDocumentElement();
@@ -162,6 +169,26 @@ public class ReversiServlet extends HttpServlet {
                " If you want to leave this table, " +
                "try the 'leave' command.", type);
          }
+
+         //see if the message includes a preference for color or table
+         Element tidElem =
+            (Element) root.getElementsByTagName("tableid").item(0);
+         if (tidElem != null) {
+            int tid = Integer.parseInt(tidElem.getTextContent());
+            // see if this table exists
+            Table target = null;
+            for (Table tbl : tables) {
+               if (tbl.getID() == tid) {
+                  target = tbl;
+                  break;
+               }
+            }
+            if (target == null) {
+               return makeErrorResponse("Table doesn't exist", type);
+            }
+            target.addPlayer(p);
+            return makeTableInfoResponse(target, type);
+         }
          // look at all current tables and see if any have seats open,
          // if so then add player to that table. If all full, make
          // a new table
@@ -175,36 +202,43 @@ public class ReversiServlet extends HttpServlet {
          tables.add(newTable);
          return makeTableInfoResponse(newTable, type);
       }
+      else if (type.equals("leave")) {
+         if (p.getTable() == null) {
+            return makeErrorResponse("You're not at any table.", type);
+         }
+         p.leaveTable();
+         return makePlayerInfoResponse(p, type);
+      }
       else if (type.equals("update")) {
          res.append("<?xml version=\"1.0\"?>" +
                     "<response type=\"confirm\" request=\"update\">");
          // first send their user info
          res.append(p.getInfoXML());
          // find the table this player is at, and send its info back.
-         if (p.getTable() != null) {
-            res.append(p.getTable().getInfoXML());
-         }
+         // if (p.getTable() != null) {
+         //    res.append(p.getTable().getInfoXML());
+         // }
          res.append("</response>");
          return res.toString();
       }
       else if (type.equals("listPlayers")) {
          res.append("<?xml version=\"1.0\"?>" +
                        "<response type=\"confirm\" "+
-                       "request=\"listPlayers\">");
+                       "request=\"listPlayers\"><players>");
          for (Player pl : players.values()) {
             res.append(pl.getInfoXML());
          }
-         res.append("</response>");
+         res.append("</players></response>");
          return res.toString();
       }
       else if (type.equals("listTables")) {
          res.append("<?xml version=\"1.0\"?>" +
                        "<response type=\"confirm\" "+
-                       "request=\"listTables\">");
+                       "request=\"listTables\"><tables>");
          for (Table tbl : tables) {
             res.append(tbl.getInfoXML());
          }
-         res.append("</response>");
+         res.append("</tables></response>");
          return res.toString();
       }
       else if (type.equals("observe")) {

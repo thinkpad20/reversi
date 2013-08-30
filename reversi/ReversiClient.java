@@ -27,8 +27,10 @@ public class ReversiClient {
     private int wins, losses, points;
     private double ratio;
     private URL url;
-    private static boolean verbose = true;
+    private static boolean verbose = false;
     private Scanner in = new Scanner(System.in);
+    Schema responseSchema;
+    Validator validator;
 
     private String makeXML(String type, String content) {
         String base = "<?xml version=\"1.0\" ?><request "+
@@ -44,7 +46,22 @@ public class ReversiClient {
 
     public ReversiClient(String url) throws MalformedURLException {
         this.url = new URL(url);
-        // keep looping until a valid username is found
+        
+        // load up schema
+        SchemaFactory sf = 
+            SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        
+        // load schema into memory
+        try {
+            File schemaFile = new File("reversi/response.xml");
+            responseSchema = sf.newSchema(schemaFile);
+            validator = responseSchema.newValidator();
+        } catch (Exception e) {
+            System.out.println("Error loading schema: ");
+            e.printStackTrace();
+        }
+
+        // this will keep looping until a valid username is found
         while (true) {
             System.out.print("Please enter a nick, or 'exit' to quit: ");
             String input = in.nextLine();
@@ -82,8 +99,19 @@ public class ReversiClient {
 
         Document document =
             builder.parse(new InputSource(new StringReader(xml)));
-        // validateXML(document);
+        try {
+            validateXML(document);
+        } catch (Exception e) {
+            System.out.println("Validation error: ");
+            e.printStackTrace();
+            System.out.println("Original XML:\n");
+            System.out.println(xml);
+        }
         return document;
+    }
+
+    private void validateXML(Document document) throws Exception {
+        validator.validate(new DOMSource(document));
     }
 
     // convenience method
@@ -179,21 +207,19 @@ public class ReversiClient {
         return false;
     }
 
-    private void join(String color, String tableid) {
-        String contents = "";
-        if (color.length() > 0) {
-            contents = "<color>" + color + "</color>";
-        }
+    private void join(String tableid) {
+        String contents = "<join>";
         if (tableid.length() > 0) {
             contents += "<tableid>" + tableid + "</tableid>";
         }
+        contents += "</join>";
         // System.out.println("Sending join request to the server");
         update(makeRequest(makeXML("join", contents)));
     }
 
     private void join() {
         // joins any open table with any color
-        join("", "");
+        join("");
     }
 
     private void move(int row, int col) {
@@ -281,6 +307,9 @@ public class ReversiClient {
             return;
         }
         NodeList tbls = resp.getElementsByTagName("tableInfo");
+        if (tbls.getLength() == 0) {
+            System.out.println("No tables currently on server");
+        }
         for (int i = 0; i < tbls.getLength(); ++i) {
             printTableInfo((Element)tbls.item(i), true, true);
         }
@@ -421,22 +450,14 @@ public class ReversiClient {
     }
 
     private void joinTable() {
-        System.out.print("Enter a color (press enter if no preference): ");
-        String color = in.nextLine();
-        if (color.length() > 0)
-            if (!color.equals("black") && !color.equals("white")) {
-                System.out.println("Error: invalid color selected. "+
-                                   "Assuming no preference.");
-                color = "";
-        }
         // make this a loop so that if the user wants, they can see all of
         // the tables available to them
         while(true) {
-            System.out.print("Enter table id (type list for list, "+
+            System.out.print("Enter table id (type tables for list, "+
                              "or enter for the first open table): ");
             
             String input = in.nextLine();
-            if (input.equals("list")) {
+            if (input.equals("tables")) {
                 // send a list tables request
                 listTables();
                 // loop will now repeat
@@ -445,7 +466,7 @@ public class ReversiClient {
                 join();
                 break;
             } else {
-                join(input, color);
+                join(input);
                 break;
             }
         }

@@ -24,7 +24,6 @@
 <xs:complexType name="join">
   <xs:sequence>
     <xs:element name="table" type="xs:string" minOccurs="0" />
-    <xs:element name="color" type="xs:string" minOccurs="0" />
   </xs:sequence>
 </xs:complexType>
 

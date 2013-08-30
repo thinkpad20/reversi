@@ -23,17 +23,17 @@
 <xs:complexType name="tableInfo">
   <xs:sequence>
     <xs:element name="tableid" type="xs:string" />
-    <!-- will tell us if the table is ready, i.e. has 2 players -->
-    <xs:element name="ready" type="xs:string" />
     <!-- any optional message the table has (announcements, etc) -->
     <xs:element name="message" type="xs:string" minOccurs="0" />
+    <!-- will tell us if the table is ready, i.e. has 2 players -->
+    <xs:element name="ready" type="xs:string" />
+    <xs:element name="blackPlayer" type="xs:string" />
+    <xs:element name="whitePlayer" type="xs:string" />
     <!-- the state of the game board, if the table is ready -->
     <xs:element name="board" type="board" minOccurs="0" />
     <!-- various game info, self-explanatory -->
     <xs:element name="blackScore" type="xs:string" minOccurs="0" />
     <xs:element name="whiteScore" type="xs:string" minOccurs="0" />
-    <xs:element name="blackPlayer" type="xs:string" />
-    <xs:element name="whitePlayer" type="xs:string" />
     <xs:element name="turn" type="xs:string" minOccurs="0" />
   </xs:sequence>
 </xs:complexType>
@@ -58,6 +58,8 @@
 <xs:complexType name="userInfo">
   <xs:sequence>
     <xs:element name="nick" type="xs:string" />
+    <!-- number of our table if we're at one -->
+    <xs:element name="table" type="xs:string" minOccurs="0" />
     <xs:element name="points" type="xs:string" />
     <xs:element name="ratio" type="xs:string" />
     <!-- optionally, we can include information about user's table -->
@@ -67,13 +69,13 @@
 
 <xs:complexType name="users">
   <xs:sequence>
-    <xs:element name="userInfo" type="userInfo" />
+    <xs:element name="userInfo" type="userInfo" minOccurs="0" />
   </xs:sequence>
 </xs:complexType>
 
 <xs:complexType name="tables">
   <xs:sequence>
-    <xs:element name="tableInfo" type="tableInfo" />
+    <xs:element name="tableInfo" type="tableInfo" minOccurs="0" />
   </xs:sequence>
 </xs:complexType>
 
@@ -85,7 +87,7 @@
         <xs:element name="userInfo" type="userInfo" />
         <xs:element name="tableInfo" type="tableInfo" />
         <xs:element name="regInfo" type="regInfo" />
-        <xs:element name="users" type="users" />
+        <xs:element name="players" type="users" />
         <xs:element name="tables" type="tables" />
       </xs:choice>
     </xs:sequence>
