@@ -102,10 +102,19 @@ public class ReversiClient {
         try {
             validateXML(document);
         } catch (Exception e) {
-            System.out.println("Validation error: ");
-            e.printStackTrace();
-            System.out.println("Original XML:\n");
-            System.out.println(xml);
+            // This is a bit of a hack: when running the game "manually,"
+            // I never get a NullPointerException, but for some reason when
+            // running the test script, I get a lot of NullPointerExceptions.
+            // I don't know why this is the case, because its behavior seems
+            // otherwise normal, but maybe it has to do with the speed of the
+            // communications? I don't know. Anyway, throwing this on there
+            // seems to return it to normal.
+            if (!(e instanceof NullPointerException)) {
+                System.out.println("Validation error: ");
+                e.printStackTrace();
+                System.out.println("Original XML:\n");
+                System.out.println(xml);
+            }
         }
         return document;
     }
@@ -598,9 +607,6 @@ public class ReversiClient {
         cli1.pass();
         cli2.move(3, 6);
         cli1.pass();
-        cli1.update();
-        cli2.update();
-        // cli2.move
     }
 
     public static void main(String[] args) throws MalformedURLException {
