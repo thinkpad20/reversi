@@ -20,7 +20,7 @@ run: all
 
 runtest: all
 	sleep 2
-	java reversi.ReversiClient test
+	java reversi.ReversiClient -t
 
 reversi/ReversiServlet.class: reversi/ReversiServlet.java
 	javac -cp /usr/local/Cellar/tomcat/7.0.42/libexec/lib/servlet-api.jar $(SOURCES)
@@ -28,9 +28,9 @@ reversi/ReversiServlet.class: reversi/ReversiServlet.java
 httpclient: reversi/ReversiClient.java
 	javac reversi/ReversiClient.java
 
-# sockets: reversi/Server.class reversi/Player.class reversi/Connection.class reversi/Table.class reversi/Client.class
-# 	javac reversi/Server.java reversi/Player.java reversi/Connection.java reversi/Table.java reversi/Client.java
-	
+badurl: all
+	java reversi.ReversiClient -u sdlkfjlds
+
 clean:
 	rm -f reversi/*.class
 

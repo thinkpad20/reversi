@@ -609,14 +609,36 @@ public class ReversiClient {
         cli1.pass();
     }
 
-    public static void main(String[] args) throws MalformedURLException {
-        if (args.length > 0 && args[0].equals("test"))
-            test("foo", "bar");
-        else {
-            String url = "http://localhost:8080/reversi";
-            //initialize the client
-            ReversiClient cli = new ReversiClient(url);
+    static String urlPath = "http://localhost:8080/reversi";
+
+    public static void main(String[] args) {
+        boolean toTest = false;
+        // gets the url from the command line with -u option,
+        // or turns testing on with -t
+        int mode = 0;
+        for (int i = 0; i < args.length; ++i) {
+            if (mode == 1) {
+                urlPath = args[i];
+            }
+            if (args[i].equals("-t"))
+                toTest = true;
+            if (args[i].equals("-u"))
+                mode = 1;
+            else
+                mode = 0;
+        }
+        try {
+            // if we're testing, run the test script
+            if (toTest) {
+                test("foo", "bar");
+                return;
+            }
+            // otherwise, initialize the client
+            ReversiClient cli = new ReversiClient(urlPath);
             cli.run();
+        } catch (MalformedURLException e) {
+            System.out.println("Bad url '" + urlPath + "', make sure "
+                                + "that's right");
         }
     }
 }
